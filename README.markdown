@@ -1,5 +1,7 @@
-# Django + Facebook Graph API authentication
+# Django + Facebook API
 This is a django app to use the new Graph API authentication with Django. It uses the standard authentication build into Django.
+
+This project is forked from django_facebook_oauth with some added features. The modifications are a work in progress and the documentation may not be up to date.
 
 Make sure you read http://developers.facebook.com/docs/authentication/ to have an idea of how this is intended to work.
 

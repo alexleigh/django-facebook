@@ -1,0 +1,8 @@
+{# if this is a canvas app, ensure we're always running on apps.facebook.com #}
+{% ifequal FACEBOOK_APP_TYPE "canvas" %}
+<script>
+    if (window == top) {
+        top.location = 'http://apps.facebook.com{{ request.path }}{% if request.META.QUERY_STRING %}?{{ request.META.QUERY_STRING }}{% endif %}';
+    };
+</script>
+{% endifequal %}

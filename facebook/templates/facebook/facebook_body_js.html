@@ -1,0 +1,33 @@
+<div id="fb-root"></div>
+<script>
+    window.fbAsyncInit = function() { facebookInit() };
+    (function() {
+        var e = document.createElement('script');
+        e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+        document.getElementById('fb-root').appendChild(e);
+    }());
+    
+    function facebookInit() {
+        var protocol = (("https:" == document.location.protocol) ? "https://" : "http://");
+        FB.init({
+            appId: {{ FACEBOOK_APP_ID }},
+            oauth: true,
+            xfbml: true,
+            {# a custom channel URL is necessary, otherwise IE will open app in auth dialog box #}
+            channelUrl: 'http://{{ request.META.HTTP_HOST }}{% url facebook_channel %}'
+        });
+        
+        FB.Event.subscribe('auth.authResponseChange', handleSessionChange);
+    }
+
+    function handleSessionChange(response) {
+        if (('{{ user.facebookprofile.facebook_id }}' && !response.authResponse.userID) ||
+            '{{ user.facebookprofile.facebook_id }}' != response.authResponse.userID) {
+            {% ifequal FACEBOOK_APP_TYPE "canvas" %}
+            top.location = 'http://apps.facebook.com{{ request.path }}{% if request.META.QUERY_STRING %}?{{ request.META.QUERY_STRING }}{% endif %}';
+            {% else %}
+            {# TODO: this should be an AJAX call to our server with the response.authResponse.accessToken as a param #}
+            {% endifequal %}
+        }
+    }
+</script>

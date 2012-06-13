@@ -1,40 +1,81 @@
+import cgi
 import urllib
 
-from django.http import HttpResponseRedirect
 from django.conf import settings
-from django.contrib.auth import login as auth_login
-from django.contrib.auth import authenticate
-from django.core.urlresolvers import reverse
+from django.contrib import auth
+from django.http import HttpResponseRedirect
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 
-def login(request):
-    """ First step of process, redirects user to facebook, which redirects to authentication_callback. """
+def login(request, template_name='facebook/login.html'):
+    redirect_to = request.REQUEST.get('next', '')
+    
+    # if this is a POST request, it may have come from the client side authentication code
+    if request.method == "POST":
+        access_token = request.REQUEST.get('access_token', '')
+        if access_token:
+            user = auth.authenticate(access_token=access_token)
+            request.user = user
+            auth.login(request, user)
+    
+    # the user may have already been logged in by our Facebook middleware layer
+    if request.user.is_authenticated():
+        # Light security check: make sure redirect_to isn't garbage.
+        if not redirect_to or '//' in redirect_to or ' ' in redirect_to:
+            redirect_to = settings.LOGIN_REDIRECT_URL
+        return HttpResponseRedirect(redirect_to)
+        
+    # this is for the client-side Facebook authentication workflow
+    if settings.FACEBOOK_AUTH_TYPE == 'client':
+        return render_to_response(template_name, context_instance=RequestContext(request))
+    
+    # this is for the server-side Facebook authentication workflow
+    else:
+        request.session['next'] = redirect_to
+        args = {
+            'client_id': settings.FACEBOOK_APP_ID,
+            'scope': settings.FACEBOOK_SCOPE,
+            'redirect_uri': request.build_absolute_uri('/facebook/callback/'),
+        }
+        return HttpResponseRedirect('https://www.facebook.com/dialog/oauth?' + urllib.urlencode(args))
 
+def callback(request):
+    redirect_to = request.session.get('next', settings.LOGIN_REDIRECT_URL)
+    
+    code = request.GET.get('code')
     args = {
         'client_id': settings.FACEBOOK_APP_ID,
-        'scope': settings.FACEBOOK_SCOPE,
-        'redirect_uri': request.build_absolute_uri('/facebook/authentication_callback'),
+        'client_secret': settings.FACEBOOK_APP_SECRET,
+        'redirect_uri': request.build_absolute_uri('/facebook/callback/'),
+        'code': code,
     }
-    return HttpResponseRedirect('https://www.facebook.com/dialog/oauth?' + urllib.urlencode(args))
 
-def authentication_callback(request):
-    """ Second step of the login process.
-    It reads in a code from Facebook, then redirects back to the home page. """
-    code = request.GET.get('code')
-    user = authenticate(token=code, request=request)
+    target = urllib.urlopen('https://graph.facebook.com/oauth/access_token?' + urllib.urlencode(args)).read()
+    response = cgi.parse_qs(target)
+    try:
+        access_token = response['access_token'][-1]
+        user = auth.authenticate(access_token=access_token)
+        auth.login(request, user)
+        # Light security check: make sure redirect_to isn't garbage.
+        if not redirect_to or '//' in redirect_to or ' ' in redirect_to:
+            redirect_to = settings.LOGIN_REDIRECT_URL
+        
+    except KeyError:
+        redirect_to = settings.LOGIN_URL
 
-    if user.is_anonymous():
-        #we have to set this user up
-        url = reverse('facebook_setup')
-        url += "?code=%s" % code
+    return HttpResponseRedirect(redirect_to)
 
-        resp = HttpResponseRedirect(url)
-
-    else:
-        auth_login(request, user)
-
-        #figure out where to go after setup
-        url = getattr(settings, "LOGIN_REDIRECT_URL", "/")
-
-        resp = HttpResponseRedirect(url)
+def logout(request):
+    access_token = ''
+    if request.user.is_authenticated():
+        access_token = request.user.facebookprofile.access_token
+        auth.logout(request)
+        args = {
+            'access_token': access_token,
+            'next': request.build_absolute_uri('/'),
+        }
+        return HttpResponseRedirect('https://www.facebook.com/logout.php?' + urllib.urlencode(args))
     
-    return resp
+    else:
+        auth.logout(request)
+        return HttpResponseRedirect('/')

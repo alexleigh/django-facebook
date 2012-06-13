@@ -1,13 +1,13 @@
 from setuptools import setup
 
 setup(
-    name='django-facebook-oauth',
+    name='django-facebook',
     version='2.0',
-    description="Facebook OAuth2 authentication for Django.",
+    description="Facebook integration with Django",
     long_description=open('README.markdown').read(),
-    author='Jeff Dickey',
-    author_email='me@jeffdickey.info',
-    url='https://github.com/dickeytk/django_facebook_oauth',
+    author='Alex Leigh',
+    author_email='leigh@atomatica.com',
+    url='https://github.com/atomatica/django-facebook',
     packages=['facebook'],
     package_dir={'facebook': 'facebook'},
     classifiers=[

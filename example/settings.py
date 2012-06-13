@@ -1,8 +1,8 @@
-# Hack to load the facebook app in this repo
-import sys, os
-sys.path.append(os.path.join(os.getcwd(), '..'))
-
 # Django settings for example project.
+
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -99,7 +99,7 @@ TEMPLATE_LOADERS = (
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'facebook.middleware.FacebookMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 )
@@ -107,10 +107,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'example.urls'
 
 TEMPLATE_DIRS = (
-    os.path.join(os.getcwd(), 'templates'),
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(PROJECT_ROOT, 'templates'),
 )
 
 INSTALLED_APPS = (
@@ -121,16 +118,17 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
-    'django.contrib.admindocs',
     'facebook',
 )
 
-# Facebook settings are set via environment variables
-FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
-FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
-FACEBOOK_SCOPE = 'email,publish_stream'
-
-AUTH_PROFILE_MODULE = 'facebook.FacebookProfile'
+TEMPLATE_CONTEXT_PROCESSORS = (
+    "django.core.context_processors.auth",
+    "django.core.context_processors.debug",
+    "django.core.context_processors.i18n",
+    "django.core.context_processors.media",
+    "django.core.context_processors.request",
+    "facebook.context_processors.facebook_settings",
+)
 
 AUTHENTICATION_BACKENDS = (
     'facebook.backend.FacebookBackend',
@@ -159,3 +157,13 @@ LOGGING = {
         },
     }
 }
+
+AUTH_PROFILE_MODULE = 'profiles.Profile'
+LOGIN_URL = '/facebook/login/'
+
+FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
+FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
+FACEBOOK_APP_NAME = 'atomatica-photo'
+FACEBOOK_APP_TYPE = 'canvas'
+FACEBOOK_AUTH_TYPE = 'client'
+FACEBOOK_SCOPE = 'user_photos,friends_photos,publish_stream'
