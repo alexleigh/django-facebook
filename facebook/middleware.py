@@ -33,7 +33,7 @@ class FacebookMiddleware:
                         auth.login(request, user)
                         return None
                 
-            except ValueError, ex:
+            except ValueError:
                 pass
             
             auth.logout(request)
