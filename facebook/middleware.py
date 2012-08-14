@@ -8,7 +8,7 @@ from django.contrib import auth
 
 class FacebookMiddleware:
     def process_request(self, request):
-        # if this is a fist load in a Facebook iframe, then the request came as
+        # if this is a first load in a Facebook iframe, then the request came as
         # a POST with a signed_request
         if u'signed_request' in request.POST:
             # ideally we should change the POST to a GET here since Facebook
